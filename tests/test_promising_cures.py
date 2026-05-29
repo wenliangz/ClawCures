@@ -102,7 +102,11 @@ def test_validate_spec_affinity_seed_scores_as_early_candidate() -> None:
                 "name": "ihd_aspirin_candidate",
                 "entities": [
                     {"type": "protein", "id": "target", "sequence": "MTEYKLVVVGAGGVGK"},
-                    {"type": "ligand", "id": "candidate", "smiles": "CC(=O)OC1=CC=CC=C1C(=O)O"},
+                    {
+                        "type": "ligand",
+                        "id": "candidate",
+                        "smiles": "CC(=O)OC1=CC=CC=C1C(=O)O",
+                    },
                 ],
             },
             "output": {

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-import re
 from typing import Any
 
 _TARGET_TOKEN_RE = re.compile(r"\b[A-Z][A-Z0-9\-]{2,11}\b")
@@ -157,7 +157,9 @@ def summarize_interesting_targets(targets: list[dict[str, Any]]) -> dict[str, An
     return {
         "total_targets": len(targets),
         "disease_counts": dict(sorted(disease_counts.items())),
-        "top_targets": [item.get("target") for item in targets[:5] if item.get("target")],
+        "top_targets": [
+            item.get("target") for item in targets[:5] if item.get("target")
+        ],
     }
 
 
@@ -283,7 +285,9 @@ def _scan_target_mentions(value: str) -> dict[str, tuple[int, int]]:
         if any(hint in window for hint in _TARGET_CONTEXT_HINTS):
             context_hits[token] += 1
 
-    return {token: (count, context_hits.get(token, 0)) for token, count in mentions.items()}
+    return {
+        token: (count, context_hits.get(token, 0)) for token, count in mentions.items()
+    }
 
 
 def _looks_like_target(token: str) -> bool:

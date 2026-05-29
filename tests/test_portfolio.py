@@ -27,8 +27,20 @@ def test_rank_disease_programs_bounds_values() -> None:
 def test_rank_disease_programs_allocates_budget_when_requested() -> None:
     ranked = rank_disease_programs(
         [
-            {"name": "A", "burden": 0.9, "tractability": 0.5, "unmet_need": 0.8, "voi": 0.8},
-            {"name": "B", "burden": 0.6, "tractability": 0.6, "unmet_need": 0.6, "voi": 0.2},
+            {
+                "name": "A",
+                "burden": 0.9,
+                "tractability": 0.5,
+                "unmet_need": 0.8,
+                "voi": 0.8,
+            },
+            {
+                "name": "B",
+                "burden": 0.6,
+                "tractability": 0.6,
+                "unmet_need": 0.6,
+                "voi": 0.2,
+            },
         ],
         weights=PortfolioWeights(),
         total_budget=100.0,

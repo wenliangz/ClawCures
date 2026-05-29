@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from refua_campaign.agent_routing import infer_domain_from_objective, pick_model_for_phase
+from refua_campaign.agent_routing import (
+    infer_domain_from_objective,
+    pick_model_for_phase,
+)
 
 
 def test_infer_domain_from_objective_detects_oncology() -> None:

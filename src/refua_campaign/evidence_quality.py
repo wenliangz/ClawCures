@@ -13,7 +13,9 @@ def summarize_evidence_quality(
 ) -> dict[str, Any]:
     citations = _collect_citations(results, interesting_targets)
     citation_urls = sorted({item["url"] for item in citations if item.get("url")})
-    citation_domains = sorted({_domain_from_url(url) for url in citation_urls if _domain_from_url(url)})
+    citation_domains = sorted(
+        {_domain_from_url(url) for url in citation_urls if _domain_from_url(url)}
+    )
 
     source_counter = Counter(item.get("tool", "unknown") for item in citations)
     unsupported_targets = [

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
 import html
 import ipaddress
 import json
 import os
-from pathlib import Path
 import re
 import sys
-from typing import Any, Callable
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, quote_plus, unquote, urljoin, urlparse
 from urllib.request import Request, urlopen
@@ -329,7 +330,7 @@ _PARALLEL_SAFE_TOOLS: frozenset[str] = frozenset(
 )
 
 
-def _import_refua_mcp_server():
+def _import_refua_mcp_server() -> Any:
     first_error: ModuleNotFoundError | None = None
     try:
         from refua_mcp import server  # type: ignore
@@ -436,7 +437,9 @@ class RefuaMcpAdapter:
         return tool in _PARALLEL_SAFE_TOOLS
 
     def parallel_safe_tools(self) -> list[str]:
-        return sorted(name for name in self.available_tools() if name in _PARALLEL_SAFE_TOOLS)
+        return sorted(
+            name for name in self.available_tools() if name in _PARALLEL_SAFE_TOOLS
+        )
 
     def execute_tools_parallel(
         self,
@@ -458,7 +461,9 @@ class RefuaMcpAdapter:
 
         workers = max(1, int(max_workers))
         workers = min(workers, len(normalized_calls))
-        ordered_results: list[ToolExecutionResult | None] = [None] * len(normalized_calls)
+        ordered_results: list[ToolExecutionResult | None] = [None] * len(
+            normalized_calls
+        )
 
         with ThreadPoolExecutor(max_workers=workers) as executor:
             future_to_index = {
@@ -470,7 +475,7 @@ class RefuaMcpAdapter:
                 tool, args = normalized_calls[idx]
                 try:
                     ordered_results[idx] = future.result()
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     if fail_fast:
                         raise
                     ordered_results[idx] = ToolExecutionResult(
@@ -592,12 +597,14 @@ def _web_search(
         or os.getenv("TOOLS_WEB_SEARCH_API_KEY", "").strip()
     )
     if brave_key:
-        return _web_search_brave(query=query_value, count=count_value, api_key=brave_key)
+        return _web_search_brave(
+            query=query_value, count=count_value, api_key=brave_key
+        )
 
     instant_error: str | None = None
     try:
         instant = _web_search_duckduckgo(query=query_value, count=count_value)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         instant_error = str(exc)
         instant = {
             "provider": "duckduckgo_instant_answer",
@@ -612,12 +619,10 @@ def _web_search(
 
     try:
         html_payload = _web_search_duckduckgo_html(query=query_value, count=count_value)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         warnings: list[str] = []
         if instant_error:
-            warnings.append(
-                f"DuckDuckGo Instant Answer failed: {instant_error}"
-            )
+            warnings.append(f"DuckDuckGo Instant Answer failed: {instant_error}")
         warnings.append(f"DuckDuckGo HTML search failed: {exc}")
         return {
             "provider": "duckduckgo_html",
@@ -768,7 +773,9 @@ def _web_search_duckduckgo(*, query: str, count: int) -> dict[str, Any]:
 
 def _web_search_duckduckgo_html(*, query: str, count: int) -> dict[str, Any]:
     url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
-    html_body, _content_type, _status_code = _http_get(url, headers={"Accept": "text/html"})
+    html_body, _content_type, _status_code = _http_get(
+        url, headers={"Accept": "text/html"}
+    )
     results = _parse_duckduckgo_html_results(html_body, count=count)
 
     if not results:
@@ -807,7 +814,9 @@ def _append_duckduckgo_related_results(
             continue
         nested_topics = entry.get("Topics")
         if isinstance(nested_topics, list):
-            _append_duckduckgo_related_results(nested_topics, out, max_results=max_results)
+            _append_duckduckgo_related_results(
+                nested_topics, out, max_results=max_results
+            )
             continue
 
         first_url = str(entry.get("FirstURL") or "").strip()
@@ -840,7 +849,11 @@ def _parse_duckduckgo_html_results(value: str, *, count: int) -> list[dict[str, 
     for idx, (href, raw_title) in enumerate(title_matches):
         parsed_url = _decode_duckduckgo_redirect_url(href)
         title = _normalize_html_fragment(raw_title)
-        snippet = _normalize_html_fragment(snippet_matches[idx]) if idx < len(snippet_matches) else ""
+        snippet = (
+            _normalize_html_fragment(snippet_matches[idx])
+            if idx < len(snippet_matches)
+            else ""
+        )
         if not parsed_url:
             continue
         if not title:

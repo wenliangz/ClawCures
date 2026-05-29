@@ -235,7 +235,10 @@ class AutonomousPlanner:
         if self._evidence_items:
             response = self._openclaw.create_response(
                 user_input="",
-                input_items=[{"type": "input_text", "text": objective}, *self._evidence_items],
+                input_items=[
+                    {"type": "input_text", "text": objective},
+                    *self._evidence_items,
+                ],
                 instructions=instructions,
                 **request_kwargs,
             )
@@ -364,7 +367,8 @@ def evaluate_plan_policy(
         first_hypothesis_index = _first_tool_index(ordered_tools, _HYPOTHESIS_TOOLS)
         if first_hypothesis_index is not None:
             evidence_before = any(
-                tool in _EVIDENCE_TOOLS for tool in ordered_tools[:first_hypothesis_index]
+                tool in _EVIDENCE_TOOLS
+                for tool in ordered_tools[:first_hypothesis_index]
             )
             if not evidence_before:
                 errors.append(
@@ -441,7 +445,10 @@ def _stage_progression_errors(tools: list[str]) -> list[str]:
 
 def _stage_progression_warnings(tools: list[str]) -> list[str]:
     warnings: list[str] = []
-    if any(tool in {"refua_fold", "refua_affinity", "refua_antibody_design"} for tool in tools):
+    if any(
+        tool in {"refua_fold", "refua_affinity", "refua_antibody_design"}
+        for tool in tools
+    ):
         if "refua_admet_profile" not in tools:
             warnings.append(
                 "Design/affinity calls present without refua_admet_profile; safety triage may be incomplete."

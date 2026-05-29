@@ -58,7 +58,7 @@ def build_translational_handoff(
             "task": "Prepare adaptive biomarker-enriched simulation packages.",
             "commands": [
                 "refua_clinical_simulator(trial_id=..., include_workup=true)",
-                "ClawCures trials-add --trial-id ... --phase \"Phase II\"",
+                'ClawCures trials-add --trial-id ... --phase "Phase II"',
             ],
             "gates": [
                 "Translational biomarker alignment",

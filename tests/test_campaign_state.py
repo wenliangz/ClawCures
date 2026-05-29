@@ -9,7 +9,9 @@ from refua_campaign.campaign_state import (
 )
 
 
-def test_persist_campaign_state_tracks_runs_failures_and_registry(tmp_path: Path) -> None:
+def test_persist_campaign_state_tracks_runs_failures_and_registry(
+    tmp_path: Path,
+) -> None:
     state_path = tmp_path / "campaign_state.json"
     summary = persist_campaign_state(
         objective="Find cures for all diseases.",

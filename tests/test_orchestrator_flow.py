@@ -175,7 +175,9 @@ def test_orchestrator_plan_repairs_invalid_first_response() -> None:
         ]
     )
     adapter = _FakeAdapter(["refua_validate_spec"])
-    orchestrator = CampaignOrchestrator(openclaw=openclaw, refua_mcp=adapter, max_plan_attempts=2)
+    orchestrator = CampaignOrchestrator(
+        openclaw=openclaw, refua_mcp=adapter, max_plan_attempts=2
+    )
 
     _planner_text, plan = orchestrator.plan(
         objective="Find cures for all diseases",
@@ -198,7 +200,9 @@ def test_orchestrator_plan_uses_mission_fallback_for_all_disease_objective() -> 
         ]
     )
     adapter = _FakeAdapter(["refua_validate_spec"])
-    orchestrator = CampaignOrchestrator(openclaw=openclaw, refua_mcp=adapter, max_plan_attempts=2)
+    orchestrator = CampaignOrchestrator(
+        openclaw=openclaw, refua_mcp=adapter, max_plan_attempts=2
+    )
 
     planner_text, plan = orchestrator.plan(
         objective=(
@@ -221,7 +225,9 @@ def test_orchestrator_plan_fallback_adds_web_search_when_available() -> None:
         ]
     )
     adapter = _FakeAdapter(["refua_validate_spec", "web_search"])
-    orchestrator = CampaignOrchestrator(openclaw=openclaw, refua_mcp=adapter, max_plan_attempts=2)
+    orchestrator = CampaignOrchestrator(
+        openclaw=openclaw, refua_mcp=adapter, max_plan_attempts=2
+    )
 
     _planner_text, plan = orchestrator.plan(
         objective=(
@@ -271,9 +277,13 @@ def test_orchestrator_plan_raises_for_non_mission_objective_after_failures() -> 
         ]
     )
     adapter = _FakeAdapter(["refua_validate_spec"])
-    orchestrator = CampaignOrchestrator(openclaw=openclaw, refua_mcp=adapter, max_plan_attempts=2)
+    orchestrator = CampaignOrchestrator(
+        openclaw=openclaw, refua_mcp=adapter, max_plan_attempts=2
+    )
 
-    with pytest.raises(ValueError, match="Planner output did not contain a JSON object."):
+    with pytest.raises(
+        ValueError, match="Planner output did not contain a JSON object."
+    ):
         orchestrator.plan(
             objective="Build a focused EGFR plan.",
             system_prompt="Return strict JSON plans.",
@@ -360,7 +370,9 @@ def test_orchestrator_plan_applies_agent_routing_and_evidence_items() -> None:
     assert call.user_input == ""
     assert call.kwargs["model"] == "openclaw:oncology-planner"
     assert isinstance(call.kwargs["input_items"], list)
-    assert any(item.get("text") == "paper evidence" for item in call.kwargs["input_items"])
+    assert any(
+        item.get("text") == "paper evidence" for item in call.kwargs["input_items"]
+    )
 
 
 def test_orchestrator_plan_uses_planner_tool_override() -> None:

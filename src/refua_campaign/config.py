@@ -17,7 +17,7 @@ class OpenClawConfig:
     bearer_token: str | None
 
     @classmethod
-    def from_env(cls) -> "OpenClawConfig":
+    def from_env(cls) -> OpenClawConfig:
         timeout_raw = os.getenv("REFUA_CAMPAIGN_TIMEOUT_SECONDS", "").strip()
         timeout_seconds = _DEFAULT_TIMEOUT_SECONDS
         if timeout_raw:

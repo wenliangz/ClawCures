@@ -53,7 +53,7 @@ def test_critic_includes_plan_payload_in_input_not_metadata() -> None:
     )
 
     plan = {"calls": [{"tool": "refua_validate_spec", "args": {"name": "demo"}}]}
-    planner._critic_once(  # noqa: SLF001
+    planner._critic_once(
         objective="Assess KRAS candidate quality",
         plan=plan,
         policy_check=PolicyCheck(approved=True, errors=(), warnings=()),

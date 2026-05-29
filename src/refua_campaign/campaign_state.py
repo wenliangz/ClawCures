@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from collections import Counter
-from collections.abc import Mapping
-from datetime import datetime, timezone
 import hashlib
 import json
 import os
+from collections import Counter
+from collections.abc import Mapping
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -126,8 +126,7 @@ def build_failure_intelligence(
     failures = _extract_failures(results)
     reasons = Counter(item.get("error") or "unknown_error" for item in failures)
     top_reasons = [
-        {"reason": reason, "count": count}
-        for reason, count in reasons.most_common(5)
+        {"reason": reason, "count": count} for reason, count in reasons.most_common(5)
     ]
 
     rejected = [
@@ -164,7 +163,7 @@ def _empty_state() -> dict[str, Any]:
 
 
 def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def _stable_run_id(*, objective: str, timestamp: str, plan: Mapping[str, Any]) -> str:
@@ -274,9 +273,15 @@ def _update_program_registry(
         )
         row["last_seen_at"] = captured_at
         row["mentions"] = int(row.get("mentions", 0)) + int(item.get("mentions") or 0)
-        row["max_score"] = max(float(row.get("max_score", 0.0)), float(item.get("score") or 0.0))
+        row["max_score"] = max(
+            float(row.get("max_score", 0.0)), float(item.get("score") or 0.0)
+        )
         urls = set(row.get("evidence_urls", []))
-        for url in item.get("source_urls", []) if isinstance(item.get("source_urls"), list) else []:
+        for url in (
+            item.get("source_urls", [])
+            if isinstance(item.get("source_urls"), list)
+            else []
+        ):
             urls.add(str(url))
         row["evidence_urls"] = sorted(urls)[:50]
         registry[key] = row
@@ -301,7 +306,9 @@ def _update_program_registry(
             },
         )
         row["last_seen_at"] = captured_at
-        row["max_score"] = max(float(row.get("max_score", 0.0)), float(item.get("score") or 0.0))
+        row["max_score"] = max(
+            float(row.get("max_score", 0.0)), float(item.get("score") or 0.0)
+        )
         row["total_runs"] = int(row.get("total_runs", 0)) + 1
         if bool(item.get("promising")):
             row["promising_runs"] = int(row.get("promising_runs", 0)) + 1

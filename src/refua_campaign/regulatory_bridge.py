@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
 import tempfile
+from pathlib import Path
 from typing import Any
 
 
@@ -61,7 +61,7 @@ def _resolve_regulatory_api() -> dict[str, Any]:
             "build_evidence_bundle": build_evidence_bundle,
             "verify_evidence_bundle": verify_evidence_bundle,
         }
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as exc:
         repo_root = Path(__file__).resolve().parents[3]
         local_src = repo_root / "refua-regulatory" / "src"
         if local_src.exists():
@@ -77,4 +77,4 @@ def _resolve_regulatory_api() -> dict[str, Any]:
             }
         raise RuntimeError(
             "refua-regulatory is not available. Install it to enable bundle generation."
-        )
+        ) from exc

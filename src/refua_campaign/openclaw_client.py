@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
@@ -186,7 +187,9 @@ def _parse_streaming_response(
     if output_text_chunks:
         return {"output_text": "".join(output_text_chunks), "output": []}
 
-    raise RuntimeError("OpenClaw streaming response did not include a terminal payload.")
+    raise RuntimeError(
+        "OpenClaw streaming response did not include a terminal payload."
+    )
 
 
 def _extract_response_id(payload: dict[str, Any]) -> str | None:

@@ -86,29 +86,25 @@ _MISSION_TARGET_DISCOVERY_QUERIES: tuple[dict[str, str], ...] = (
     {
         "disease_slug": "lung_cancer",
         "query": (
-            "lung cancer actionable therapeutic targets "
-            "EGFR ALK KRAS MET review"
+            "lung cancer actionable therapeutic targets " "EGFR ALK KRAS MET review"
         ),
     },
     {
         "disease_slug": "alzheimers_disease",
         "query": (
-            "alzheimer disease therapeutic targets "
-            "APP MAPT TREM2 APOE review"
+            "alzheimer disease therapeutic targets " "APP MAPT TREM2 APOE review"
         ),
     },
     {
         "disease_slug": "type_2_diabetes",
         "query": (
-            "type 2 diabetes therapeutic targets "
-            "GLP1R SGLT2 PPARG GIPR review"
+            "type 2 diabetes therapeutic targets " "GLP1R SGLT2 PPARG GIPR review"
         ),
     },
     {
         "disease_slug": "tuberculosis",
         "query": (
-            "tuberculosis validated drug targets "
-            "InhA DprE1 ATP synthase review"
+            "tuberculosis validated drug targets " "InhA DprE1 ATP synthase review"
         ),
     },
     {
@@ -329,11 +325,7 @@ class CampaignOrchestrator:
 
     def plan(self, *, objective: str, system_prompt: str) -> tuple[str, dict[str, Any]]:
         allowed_tools = list(self._planner_tools or self._refua_mcp.available_tools())
-        instructions = (
-            system_prompt.strip()
-            + "\n\n"
-            + planner_suffix(allowed_tools)
-        )
+        instructions = system_prompt.strip() + "\n\n" + planner_suffix(allowed_tools)
         attempt_texts: list[str] = []
         last_error: ValueError | None = None
         planner_failure: Exception | None = None
@@ -371,7 +363,7 @@ class CampaignOrchestrator:
                     instructions=attempt_instructions,
                     **request_kwargs,
                 )
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 planner_failure = exc
                 break
             attempt_texts.append(response.text)
@@ -490,7 +482,11 @@ class CampaignOrchestrator:
 
             pending_input_items = []
             round_results = self._execute_native_function_calls(response.function_calls)
-            for call, result in zip(response.function_calls, round_results):
+            for call, result in zip(
+                response.function_calls,
+                round_results,
+                strict=True,
+            ):
                 results.append(result)
                 executed_calls.append({"tool": result.tool, "args": result.args})
                 pending_input_items.append(
@@ -512,7 +508,10 @@ class CampaignOrchestrator:
                         results = expanded
                         for generated_item in new_items:
                             executed_calls.append(
-                                    {"tool": generated_item.tool, "args": generated_item.args}
+                                {
+                                    "tool": generated_item.tool,
+                                    "args": generated_item.args,
+                                }
                             )
         else:
             transcript.append(
@@ -551,7 +550,7 @@ class CampaignOrchestrator:
         for call in function_calls:
             try:
                 result = self._refua_mcp.execute_tool(call.name, call.arguments)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 if self._native_tool_fail_fast:
                     raise
                 result = ToolExecutionResult(
@@ -855,9 +854,9 @@ def _infer_ligand_entity(args: dict[str, Any]) -> dict[str, Any] | None:
     for key in _LIGAND_CONTAINER_KEYS:
         nested = args.get(key)
         if isinstance(nested, dict):
-            entity = _ligand_entity_from_mapping(nested, default_id=key)
-            if entity is not None:
-                return entity
+            nested_entity = _ligand_entity_from_mapping(nested, default_id=key)
+            if nested_entity is not None:
+                return nested_entity
     return None
 
 
@@ -1115,7 +1114,9 @@ def _build_default_objective_fallback_plan(
     if "refua_validate_spec" not in allowed_set:
         return {"calls": calls}
 
-    max_programs = 3 if ("web_search" in allowed_set or "web_fetch" in allowed_set) else 5
+    max_programs = (
+        3 if ("web_search" in allowed_set or "web_fetch" in allowed_set) else 5
+    )
     seed_programs = _MISSION_BOOTSTRAP_PROGRAMS[:max_programs]
     for item in seed_programs:
         disease_slug = item["disease_slug"]

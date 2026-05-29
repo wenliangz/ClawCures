@@ -33,7 +33,7 @@ def expand_results_with_web_fetch(
     for args in fetch_args_list:
         try:
             fetch_result = execute_tool("web_fetch", args)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             fetch_result = ToolExecutionResult(
                 tool="web_fetch",
                 args=dict(args),

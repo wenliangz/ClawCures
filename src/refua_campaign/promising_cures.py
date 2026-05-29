@@ -299,7 +299,7 @@ def _result_parts(item: Any) -> tuple[str, dict[str, Any], Any]:
         tool = str(item.get("tool") or "unknown_tool")
         args = item.get("args")
         output = item.get("output")
-        return tool, args if isinstance(args, Mapping) else {}, output
+        return tool, dict(args) if isinstance(args, Mapping) else {}, output
 
     tool = str(getattr(item, "tool", "unknown_tool"))
     args_raw = getattr(item, "args", {})

@@ -110,12 +110,12 @@ def rank_disease_programs(
         ]
 
     allocated: list[RankedDisease] = []
-    for item in ranked:
-        expected = max(float(item.expected_value or 0.0), 0.0)
+    for ranked_item in ranked:
+        expected = max(float(ranked_item.expected_value or 0.0), 0.0)
         fraction = expected / ev_sum
         allocated.append(
             _with_decision(
-                item,
+                ranked_item,
                 recommended_budget=round(budget_value * fraction, 4),
                 allocation_fraction=round(fraction, 6),
             )

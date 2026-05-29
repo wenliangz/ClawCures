@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import argparse
-from collections import Counter
-from datetime import datetime, timezone
 import json
 import os
 import sys
 import uuid
+from collections import Counter
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from refua_campaign.autonomy import (
     AutonomousPlanner,
@@ -32,8 +32,12 @@ from refua_campaign.promising_cures import (
     summarize_promising_cures,
 )
 from refua_campaign.prompts import load_system_prompt
+from refua_campaign.refua_mcp_adapter import (
+    DEFAULT_TOOL_LIST,
+    RefuaMcpAdapter,
+    ToolExecutionResult,
+)
 from refua_campaign.regulatory_bridge import build_regulatory_bundle
-from refua_campaign.refua_mcp_adapter import DEFAULT_TOOL_LIST, RefuaMcpAdapter
 from refua_campaign.target_discovery import (
     extract_interesting_targets,
     summarize_interesting_targets,
@@ -180,9 +184,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--native-tool-max-workers",
         type=int,
         default=4,
-        help=(
-            "Maximum worker threads when executing parallel-safe native tool calls."
-        ),
+        help=("Maximum worker threads when executing parallel-safe native tool calls."),
     )
     run_parser.add_argument(
         "--auto-web-fetch",
@@ -756,7 +758,9 @@ def _cmd_run(args: argparse.Namespace) -> int:
     loop_forever = effective_max_cycles == 0
     cycle_memory_notes: list[str] = []
     if multi_cycle_mode:
-        state_snapshot = load_campaign_state(args.state_file or default_campaign_state_path())
+        state_snapshot = load_campaign_state(
+            args.state_file or default_campaign_state_path()
+        )
         state_memory = _build_state_memory_note(state_snapshot)
         if state_memory:
             cycle_memory_notes.append(state_memory)
@@ -778,7 +782,9 @@ def _cmd_run(args: argparse.Namespace) -> int:
                         "--native-tool-loop cannot be used with --plan-file."
                     )
                 if run_config.dry_run:
-                    raise ValueError("--native-tool-loop cannot be used with --dry-run.")
+                    raise ValueError(
+                        "--native-tool-loop cannot be used with --dry-run."
+                    )
                 if adapter_error is not None:
                     raise RuntimeError(str(adapter_error))
                 native_run = orchestrator.run_native_tool_loop(
@@ -828,7 +834,9 @@ def _cmd_run(args: argparse.Namespace) -> int:
                     "warnings": list(check.warnings),
                     "config": {
                         "max_calls": int(plan_policy.max_calls),
-                        "require_validate_first": bool(plan_policy.require_validate_first),
+                        "require_validate_first": bool(
+                            plan_policy.require_validate_first
+                        ),
                         "enforce_stage_progression": bool(
                             plan_policy.enforce_stage_progression
                         ),
@@ -905,7 +913,9 @@ def _cmd_run(args: argparse.Namespace) -> int:
                     "plan": plan,
                     "results": serialized_results,
                     "promising_cures": promising_cures,
-                    "promising_cures_summary": summarize_promising_cures(promising_cures),
+                    "promising_cures_summary": summarize_promising_cures(
+                        promising_cures
+                    ),
                     "interesting_targets": interesting_targets,
                     "interesting_targets_summary": summarize_interesting_targets(
                         interesting_targets
@@ -966,7 +976,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
                         session_key=session_key,
                         state_path=state_file,
                     )
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     payload.setdefault("warnings", []).append(
                         f"Campaign state update failed: {exc}"
                     )
@@ -979,7 +989,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
                         campaign_run_path=None,
                         overwrite=True,
                     )
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     payload.setdefault("warnings", []).append(
                         f"Regulatory bundle generation failed: {exc}"
                     )
@@ -1110,11 +1120,16 @@ def _cmd_run_autonomous(args: argparse.Namespace) -> int:
         final_plan = payload.get("final_plan")
         if not isinstance(final_plan, dict):
             raise ValueError("Final plan is missing from autonomous payload.")
-        results = adapter.execute_plan(final_plan)
+        results = cast(list[ToolExecutionResult], adapter.execute_plan(final_plan))
         if bool(args.auto_web_fetch):
+            execute_tool = getattr(adapter, "execute_tool", None)
+            if not callable(execute_tool):
+                raise RuntimeError(
+                    "auto web fetch requires an executable tool adapter."
+                )
             results, generated_auto_fetch = expand_results_with_web_fetch(
                 results=results,
-                execute_tool=adapter.execute_tool,  # type: ignore[attr-defined]
+                execute_tool=execute_tool,
                 max_urls=max(0, int(args.auto_web_fetch_max_urls)),
                 max_chars=max(1, int(args.auto_web_fetch_max_chars)),
             )
@@ -1159,8 +1174,10 @@ def _cmd_run_autonomous(args: argparse.Namespace) -> int:
             "Autonomous loop finished without an approved plan."
         )
 
-    if bool(payload.get("approved")) and not bool(args.dry_run) and not bool(
-        args.disable_state_update
+    if (
+        bool(payload.get("approved"))
+        and not bool(args.dry_run)
+        and not bool(args.disable_state_update)
     ):
         state_file = args.state_file or default_campaign_state_path()
         final_plan_payload = payload.get("final_plan")
@@ -1186,12 +1203,16 @@ def _cmd_run_autonomous(args: argparse.Namespace) -> int:
                 session_key=session_key,
                 state_path=state_file,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             payload.setdefault("warnings", []).append(
                 f"Campaign state update failed: {exc}"
             )
 
-    if bool(payload.get("approved")) and not bool(args.dry_run) and args.regulatory_bundle_dir is not None:
+    if (
+        bool(payload.get("approved"))
+        and not bool(args.dry_run)
+        and args.regulatory_bundle_dir is not None
+    ):
         try:
             payload["regulatory_bundle"] = build_regulatory_bundle(
                 payload=payload,
@@ -1199,7 +1220,7 @@ def _cmd_run_autonomous(args: argparse.Namespace) -> int:
                 campaign_run_path=None,
                 overwrite=True,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             payload.setdefault("warnings", []).append(
                 f"Regulatory bundle generation failed: {exc}"
             )
@@ -1237,13 +1258,13 @@ def _cmd_validate_plan(args: argparse.Namespace) -> int:
         "warnings": list(check.warnings),
     }
     if adapter_error is not None:
-        payload.setdefault("warnings", []).append(str(adapter_error))
+        cast(list[str], payload["warnings"]).append(str(adapter_error))
     print(json.dumps(payload, indent=2))
     return 0
 
 
 def _build_loop_session_key() -> str:
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%SZ")
+    stamp = datetime.now(UTC).strftime("%Y%m%d%H%M%SZ")
     return f"clawcures-loop-{stamp}-{uuid.uuid4().hex[:8]}"
 
 
@@ -1253,7 +1274,11 @@ def _build_state_memory_note(state: dict[str, Any]) -> str:
 
     lines: list[str] = []
     runs_raw = state.get("runs")
-    runs = [item for item in runs_raw if isinstance(item, dict)] if isinstance(runs_raw, list) else []
+    runs = (
+        [item for item in runs_raw if isinstance(item, dict)]
+        if isinstance(runs_raw, list)
+        else []
+    )
     if runs:
         recent = runs[-1]
         lines.append(
@@ -1265,15 +1290,17 @@ def _build_state_memory_note(state: dict[str, Any]) -> str:
         )
 
     failures_raw = state.get("failures")
-    failures = [item for item in failures_raw if isinstance(item, dict)] if isinstance(failures_raw, list) else []
+    failures = (
+        [item for item in failures_raw if isinstance(item, dict)]
+        if isinstance(failures_raw, list)
+        else []
+    )
     if failures:
         reason_counts = Counter(
-            str(item.get("error") or "unknown_error")
-            for item in failures[-200:]
+            str(item.get("error") or "unknown_error") for item in failures[-200:]
         )
         top_reasons = ", ".join(
-            f"{reason} ({count})"
-            for reason, count in reason_counts.most_common(3)
+            f"{reason} ({count})" for reason, count in reason_counts.most_common(3)
         )
         if top_reasons:
             lines.append(f"Common prior tool failures: {top_reasons}.")
@@ -1304,8 +1331,7 @@ def _build_state_memory_note(state: dict[str, Any]) -> str:
         if target_rows:
             target_rows.sort(key=lambda item: (item[0], item[1]), reverse=True)
             top_targets = ", ".join(
-                f"{name} ({mentions})"
-                for mentions, name in target_rows[:5]
+                f"{name} ({mentions})" for mentions, name in target_rows[:5]
             )
             lines.append(f"Top retained targets: {top_targets}.")
         if cure_rows:
@@ -1315,8 +1341,7 @@ def _build_state_memory_note(state: dict[str, Any]) -> str:
                 for promising, total, name in cure_rows[:5]
             )
             lines.append(
-                "Most repeated candidates (promising/total runs): "
-                f"{top_cures}."
+                "Most repeated candidates (promising/total runs): " f"{top_cures}."
             )
 
     note = " ".join(lines).strip()
@@ -1331,7 +1356,7 @@ def _compose_objective_with_cycle_memory(
 ) -> str:
     trimmed_notes = [
         note.strip()
-        for note in memory_notes[-_LOOP_MEMORY_WINDOW_CYCLES :]
+        for note in memory_notes[-_LOOP_MEMORY_WINDOW_CYCLES:]
         if str(note).strip()
     ]
     if not trimmed_notes:
@@ -1352,10 +1377,7 @@ def _compose_objective_with_cycle_memory(
         )
 
     rendered = _render(trimmed_notes)
-    while (
-        len(rendered) > _LOOP_MEMORY_OBJECTIVE_CHAR_BUDGET
-        and len(trimmed_notes) > 1
-    ):
+    while len(rendered) > _LOOP_MEMORY_OBJECTIVE_CHAR_BUDGET and len(trimmed_notes) > 1:
         trimmed_notes = trimmed_notes[1:]
         rendered = _render(trimmed_notes)
 
@@ -1396,9 +1418,7 @@ def _build_cycle_memory_note(*, payload: dict[str, Any], cycle_index: int) -> st
             else []
         )
         if top_targets:
-            parts.append(
-                f"targets={total_targets} top={','.join(top_targets[:3])}"
-            )
+            parts.append(f"targets={total_targets} top={','.join(top_targets[:3])}")
         else:
             parts.append(f"targets={total_targets}")
 
@@ -1494,10 +1514,7 @@ def _load_evidence_items(*, paths: list[Path], max_chars: int) -> list[dict[str,
         items.append(
             {
                 "type": "input_text",
-                "text": (
-                    f"[Evidence File: {path}]\n"
-                    f"{clipped}"
-                ),
+                "text": (f"[Evidence File: {path}]\n" f"{clipped}"),
             }
         )
     return items
@@ -1518,9 +1535,9 @@ def _cmd_rank_portfolio(args: argparse.Namespace) -> int:
     ranked = rank_disease_programs(
         payload,
         weights=weights,
-        total_budget=float(args.total_budget)
-        if args.total_budget is not None
-        else None,
+        total_budget=(
+            float(args.total_budget) if args.total_budget is not None else None
+        ),
         voi_weight=float(args.voi_weight),
     )
     rendered_payload = {
@@ -1532,9 +1549,9 @@ def _cmd_rank_portfolio(args: argparse.Namespace) -> int:
             "novelty": weights.novelty,
         },
         "portfolio_constraints": {
-            "total_budget": float(args.total_budget)
-            if args.total_budget is not None
-            else None,
+            "total_budget": (
+                float(args.total_budget) if args.total_budget is not None else None
+            ),
             "voi_weight": float(args.voi_weight),
         },
         "ranked": [item.to_json() for item in ranked],
@@ -1698,7 +1715,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return int(args.handler(args))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
